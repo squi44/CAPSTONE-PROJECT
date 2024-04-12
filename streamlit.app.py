@@ -5,6 +5,7 @@ import xgboost as xgb
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.preprocessing import StandardScaler
 
 # Install required packages
 def install_packages():
@@ -16,11 +17,47 @@ def load_model():
     model.load_model("xgb_model.json")
     return model
 
+# Define a function to preprocess the transaction data
+def preprocess_data(transaction_data):
+    # Perform standard scaling on the 'Amount' column
+    scaler = StandardScaler()
+    transaction_data['Amount'] = scaler.fit_transform(transaction_data[['Amount']])
+    return transaction_data
+
 # Function to predict fraud
 def predict_fraud(model, transaction_data):
     # Make predictions using the pre-trained model
     predictions = model.predict(transaction_data)
     return predictions
+
+# Define the CSS styles for the app
+def set_custom_style():
+    st.markdown(
+        """
+        <style>
+        .sidebar .sidebar-content {
+            background-color: #f0f2f6;
+        }
+        .streamlit-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .streamlit-button:hover {
+            background-color: #45a049;
+        }
+        footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #f0f2f6;
+            padding: 10px;
+            text-align: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 def main():
     st.title("Fraud Detection App")
@@ -80,6 +117,14 @@ def main():
             axes[1].set_xlabel("Predicted Class")
             axes[1].set_ylabel("Count")
             st.pyplot()
-
+# Footer
+    st.markdown(
+        """
+        <footer>
+            Statement by sserunjogi aaron: "Preventing fraud is a collective responsibility. Let's stay vigilant and protect our financial assets."
+        </footer>
+        """,
+        unsafe_allow_html=True
+    )
 if __name__ == "__main__":
     main()
