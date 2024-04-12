@@ -1,78 +1,57 @@
 import streamlit as st
-import subprocess
 import pandas as pd
 import xgboost as xgb
-from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
 
-# Install required packages
-def install_packages():
-    subprocess.call("pip install -r requirements.txt", shell=True)
+# Load the pre-trained XGBoost model
+model = xgb.XGBClassifier()
+model.load_model("xgb_model.json")
 
-# Function to load the pre-trained XGBoost model
-def load_model():
-    model = xgb.XGBClassifier()
-    model.load_model("xgb_model.json")
-    return model
+# Sample dataset (replace this with your actual dataset)
+# For demonstration purposes, I'll create a simple DataFrame
+data = {
+    'Time': [0, 1, 2, 3, 4],
+    'Amount': [10.0, 20.0, 30.0, 40.0, 50.0],
+    'Location': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'],
+    'Class': [0, 1, 0, 0, 1]  # Dummy class labels (0: Non-fraud, 1: Fraud)
+}
+transaction_data = pd.DataFrame(data)
 
-# Define a function to preprocess the transaction data
 def preprocess_data(transaction_data):
-    # Perform standard scaling on the 'Amount' column
+    # Perform preprocessing such as scaling
     scaler = StandardScaler()
-    transaction_data['Amount'] = scaler.fit_transform(transaction_data[['Amount']])
+    scaled_amount = scaler.fit_transform(transaction_data[['Amount']])
+    transaction_data['Scaled_Amount'] = scaled_amount
     return transaction_data
 
-# Function to predict fraud
-def predict_fraud(model, transaction_data):
+def predict_fraud(transaction_data):
+    # Perform preprocessing
+    preprocessed_data = preprocess_data(transaction_data)
     # Make predictions using the pre-trained model
-    predictions = model.predict(transaction_data)
+    predictions = model.predict(preprocessed_data.drop(columns=['Class'], axis=1))
     return predictions
-
-# Define the CSS styles for the app
-def set_custom_style():
-    st.markdown(
-        """
-        <style>
-        .sidebar .sidebar-content {
-            background-color: #f0f2f6;
-        }
-        .streamlit-button {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .streamlit-button:hover {
-            background-color: #45a049;
-        }
-        footer {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background-color: #f0f2f6;
-            padding: 10px;
-            text-align: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
 
 def main():
     st.title("Fraud Detection App")
-    st.write("Upload your transaction data to detect fraudulent transactions.")
+    st.write("Welcome to the Fraud Detection App!")
+
+    # Sidebar for user authentication
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Password", type="password")
+    if st.sidebar.button("Login"):
+        if username == "admin" and password == "password":
+            st.sidebar.success("Logged in as Admin")
+        else:
+            st.sidebar.error("Invalid Username or Password")
 
     # File upload widget
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    uploaded_file = st.file_uploader("Upload your transaction data (CSV file)", type="csv")
 
     if uploaded_file is not None:
-        # Install required packages
-        install_packages()
-
-        # Load pre-trained model
-        model = load_model()
-
         # Read the uploaded file
         transaction_data = pd.read_csv(uploaded_file)
 
@@ -85,7 +64,7 @@ def main():
             st.write("Performing fraud detection...")
 
             # Perform prediction
-            predictions = predict_fraud(model, transaction_data.drop(columns=['Class'], axis=1))
+            predictions = predict_fraud(transaction_data)
 
             # Display the results
             st.subheader("Prediction Results:")
@@ -117,14 +96,56 @@ def main():
             axes[1].set_xlabel("Predicted Class")
             axes[1].set_ylabel("Count")
             st.pyplot()
-# Footer
-    st.markdown(
-        """
-        <footer>
-            Statement by sserunjogi aaron: "Preventing fraud is a collective responsibility. Let's stay vigilant and protect our financial assets."
-        </footer>
-        """,
-        unsafe_allow_html=True
-    )
+
+    # Data Visualization Section
+    st.sidebar.title("Data Visualization")
+    st.sidebar.subheader("Visualize Transaction Data")
+    # Add interactive visualization options here (e.g., trend analysis, geographical heatmaps)
+
+    # Real-time Monitoring Section
+    st.sidebar.title("Real-time Monitoring")
+    st.sidebar.subheader("Enable Real-time Fraud Monitoring")
+    # Add options to enable real-time monitoring and set up alerts for suspicious activities
+
+    # Transaction Categorization Section
+    st.sidebar.title("Transaction Categorization")
+    st.sidebar.subheader("Categorize Transactions")
+    # Add options to automatically categorize transactions for better expense tracking
+
+    # Transaction Filtering and Search Section
+    st.sidebar.title("Transaction Filtering and Search")
+    st.sidebar.subheader("Filter and Search Transactions")
+    # Add options for users to filter and search their transaction history based on various criteria
+
+    # Customizable Alerts Section
+    st.sidebar.title("Customizable Alerts")
+    st.sidebar.subheader("Set Up Custom Alerts")
+    # Allow users to customize fraud detection alerts based on their preferences
+
+    # Educational Resources Section
+    st.sidebar.title("Educational Resources")
+    st.sidebar.subheader("Learn How to Protect Yourself from Fraud")
+    # Provide links to educational resources or tips on fraud prevention
+
+    # Exportable Reports Section
+    st.sidebar.title("Exportable Reports")
+    st.sidebar.subheader("Export Reports for Analysis")
+    # Allow users to export transaction data and fraud detection reports for further analysis
+
+    # Feedback Mechanism Section
+    st.sidebar.title("Feedback Mechanism")
+    st.sidebar.subheader("Provide Feedback")
+    # Include a feedback mechanism to gather user input and improve the app
+
+    # Integration with External APIs Section
+    st.sidebar.title("Integration with External APIs")
+    st.sidebar.subheader("Integrate External Services")
+    # Add options to integrate with external APIs for additional features like credit score monitoring
+
+    # Footer
+    st.markdown("<hr>", unsafe_allow_html=True)
+    st.markdown("*Developed by [Your Name]*")
+    st.markdown("*\"{}\" - Sserunjogi Aaron*".format(footer_statement))
+
 if __name__ == "__main__":
     main()
