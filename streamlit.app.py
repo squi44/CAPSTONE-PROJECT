@@ -1,211 +1,136 @@
 import streamlit as st
 import pandas as pd
-import xgboost as xgb
-import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, f1_score, precision_recall_curve
+import plotly.graph_objects as go
+import plotly.express as px
+import xgboost as xgb
 
-def preprocess_data(transaction_data):
-    # Perform preprocessing such as scaling
+# Function to preprocess data
+def preprocess_data(df):
     scaler = StandardScaler()
-    scaled_amount = scaler.fit_transform(transaction_data[['Amount']])
-    transaction_data['Scaled_Amount'] = scaled_amount
-    return transaction_data
-    
-def train_xgboost_model(transaction_data):
-    # Perform preprocessing
-    preprocessed_data = preprocess_data(transaction_data)
-    # Split data into features and target
-    X = preprocessed_data.drop(columns=['Class'], axis=1)
-    y = preprocessed_data['Class']
-    
-    # Split data into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # Train XGBoost model
-    model = xgb.XGBClassifier(n_jobs=-1)
-    model.fit(X_train, y_train)
-    
-    # Evaluate model
-    predictions = model.predict(X_test)
-    print("Classification Report:")
-    print(classification_report(y_test, predictions))
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, predictions))
-    return model
+    df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
+    return df
 
+# Load dataset
+@st.cache
+def load_data(filename):
+    df = pd.read_csv(filename)
+    df = preprocess_data(df)
+    return df
 
-def predict_fraud(transaction_data, model):
-    # Perform preprocessing
-    preprocessed_data = preprocess_data(transaction_data)
-    # Make predictions using the pre-trained model
-    predictions = model.predict(preprocessed_data.drop(columns=['Class'], axis=1))
-    return predictions
-     # Create a new column to label the predictions
-    transaction_data['Prediction'] = ['fraud' if pred == 1 else 'legit' for pred in predictions]
-    return transaction_data
+# Model training and evaluation
+def train_and_evaluate_model(df):
+    X = df.drop(columns=['Class'], axis=1)
+    y = df['Class']
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+    
+    # Logistic Regression
+    lr_model = LogisticRegression()
+    lr_model.fit(x_train, y_train)
+    lr_y_pred = lr_model.predict(x_test)
+    lr_f1 = f1_score(y_test, lr_y_pred)
+    
+    # Random Forest
+    rf_model = RandomForestClassifier()
+    rf_model.fit(x_train, y_train)
+    rf_y_pred = rf_model.predict(x_test)
+    rf_f1 = f1_score(y_test, rf_y_pred)
+    
+    # Decision Tree
+    dt_model = DecisionTreeClassifier()
+    dt_model.fit(x_train, y_train)
+    dt_y_pred = dt_model.predict(x_test)
+    dt_f1 = f1_score(y_test, dt_y_pred)
+    
+    # XGBoost
+    xgb_model = xgb.XGBClassifier()
+    xgb_model.fit(x_train, y_train)
+    xgb_y_pred = xgb_model.predict(x_test)
+    xgb_f1 = f1_score(y_test, xgb_y_pred)
+    
+    return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
+# Visualizations
+def plot_distribution(df):
+    fig, axes = plt.subplots(nrows=7, ncols=4, figsize=(20, 25))
+    axes = axes.flatten()
+    for i, col in enumerate(df.columns[1:-1]):
+        sns.distplot(df[col], ax=axes[i])
+    plt.tight_layout()
+    st.pyplot()
+
+def plot_class_distribution(df):
+    fig = px.histogram(df, x='Class', title='Class Distribution', color='Class')
+    st.plotly_chart(fig)
+
+def plot_feature_importance(model, df):
+    if isinstance(model, xgb.XGBClassifier):
+        fig = xgb.plot_importance(model)
+        st.pyplot(fig)
+    else:
+        feature_importance = model.feature_importances_
+        feature_names = df.columns[:-1]
+        fig = go.Figure([go.Bar(x=feature_names, y=feature_importance)])
+        fig.update_layout(title='Random Forest Feature Importance', xaxis_title='Features', yaxis_title='Importance')
+        st.plotly_chart(fig)
+
+def plot_precision_recall(models, names, x_test, y_test):
+    fig = go.Figure()
+    for model, name in zip(models, names):
+        precisions, recalls, _ = precision_recall_curve(y_test, model.predict_proba(x_test)[:,1])
+        fig.add_trace(go.Scatter(x=recalls, y=precisions, mode='lines', name=name))
+    fig.update_layout(xaxis_title='Recall', yaxis_title='Precision', title='Precision-Recall Curve')
+    st.plotly_chart(fig)
+
+# Main function
 def main():
-    st.title("Fraud Detection App")
-    st.write("Welcome to the Fraud Detection App!")
+    st.title("Fraud Detection Dashboard")
 
-    # Sidebar for user authentication
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Password", type="password")
-    if st.sidebar.button("Login"):
-        if username == "admin" and password == "password":
-            st.sidebar.success("Logged in as Admin")
-        else:
-            st.sidebar.error("Invalid Username or Password")
-
-def main():
-    st.title("Fraud Detection App")
-    st.write("Welcome to the Fraud Detection App!")
-
-    # File upload widget for single CSV transaction
-    uploaded_file = st.file_uploader("Upload single transaction data (CSV file)", type="csv")
-
+    # Load data
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
     if uploaded_file is not None:
-        # Read the uploaded file
-        transaction_data = pd.read_csv(uploaded_file)
+        df = load_data(uploaded_file)
+        st.success("Data successfully loaded and preprocessed.")
+        st.subheader("Data Summary")
+        st.write(df.head())
 
-        # Display a preview of the uploaded data
-        st.subheader("Uploaded Transaction Data:")
-        st.write(transaction_data.head())
+        # Visualization
+        st.subheader("Data Distribution")
+        plot_distribution(df)
+        st.subheader("Class Distribution")
+        plot_class_distribution(df)
 
-        # Button to start prediction for single transaction
-        if st.button("Detect Fraud (Single Transaction)"):
-            model = train_xgboost_model(transaction_data)
-            st.write("Performing fraud detection for single transaction...")
+        # Train and evaluate models
+        st.subheader("Model Training and Evaluation")
+        lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test = train_and_evaluate_model(df)
+        st.write("Logistic Regression F1 Score:", lr_f1)
+        st.write("Random Forest F1 Score:", rf_f1)
+        st.write("Decision Tree F1 Score:", dt_f1)
+        st.write("XGBoost F1 Score:", xgb_f1)
 
-            # Perform prediction for single transaction
-            prediction = predict_fraud(transaction_data, model)
+        # Model comparison
+        st.subheader("Model Comparison")
+        models = ['Logistic Regression', 'Random Forest', 'Decision Tree', 'XGBoost']
+        f1_scores = [lr_f1, rf_f1, dt_f1, xgb_f1]
+        fig = go.Figure(data=[go.Bar(x=models, y=f1_scores)])
+        fig.update_layout(title='Model Comparison', xaxis_title='Model', yaxis_title='F1 Score')
+        st.plotly_chart(fig)
 
-            # Display the result for single transaction
-            st.subheader("Prediction Result for Single Transaction:")
-            st.write(prediction)
+        # Feature Importance
+        st.subheader("Feature Importance")
+        plot_feature_importance(rf_model, df)
 
-    # File upload widget for multiple CSV transactions
-    uploaded_files = st.file_uploader("Upload multiple transaction data (CSV files)", type="csv", accept_multiple_files=True)
-
-    if uploaded_files:
-        st.subheader("Uploaded Transaction Data:")
-        for uploaded_file in uploaded_files:
-            # Read the uploaded file
-            transaction_data = pd.read_csv(uploaded_file)
-            
-
-            # Display a preview of the uploaded data
-            st.write(transaction_data.head())
-          
-
-            # Perform prediction for each uploaded file
-            model = train_xgboost_model(transaction_data)
-            prediction = predict_fraud(transaction_data, model)
-
-            # Display the result for each uploaded file
-            st.subheader(f"Prediction Result for {uploaded_file.name}:")
-            st.write(prediction)
-            
-        # Display a preview of the uploaded data
-        st.subheader("Uploaded Transaction Data:")
-        st.write(transaction_data.head())
-
-        # Button to start prediction
-        if st.button("Detect Fraud"):
-            model = train_xgboost_model(transaction_data)
-            st.write("Performing fraud detection...")
-
-            # Perform prediction
-            predictions = predict_fraud(transaction_data, model)
-
-            # Display the results
-            st.subheader("Prediction Results:")
-            st.write(predictions)
-
-            # Display detailed metrics
-            st.subheader("Detailed Metrics:")
-            st.write(classification_report(transaction_data['Class'], predictions))
-
-            # Display confusion matrix
-            st.subheader("Confusion Matrix:")
-            cm = confusion_matrix(transaction_data['Class'], predictions)
-            plt.figure(figsize=(8, 6))
-            sns.heatmap(cm, annot=True, cmap='Blues', fmt='g')
-            plt.xlabel('Predicted')
-            plt.ylabel('Actual')
-            st.pyplot()
-
-            # Display visualization of prediction results
-            st.subheader("Visualization of Prediction Results:")
-            fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-            sns.countplot(x='Class', data=transaction_data, ax=axes[0])
-            axes[0].set_title("Actual Distribution")
-            axes[0].set_xlabel("Class")
-            axes[0].set_ylabel("Count")
-
-            sns.countplot(x=predictions, ax=axes[1])
-            axes[1].set_title("Predicted Distribution")
-            axes[1].set_xlabel("Predicted Class")
-            axes[1].set_ylabel("Count")
-            st.pyplot()
-
-    # Data Visualization Section
-    st.sidebar.title("Data Visualization")
-    st.sidebar.subheader("Visualize Transaction Data")
-    # Add interactive visualization options here (e.g., trend analysis, geographical heatmaps)
-
-    # Real-time Monitoring Section
-    st.sidebar.title("Real-time Monitoring")
-    st.sidebar.subheader("Enable Real-time Fraud Monitoring")
-    # Add options to enable real-time monitoring and set up alerts for suspicious activities
-
-    # Transaction Categorization Section
-    st.sidebar.title("Transaction Categorization")
-    st.sidebar.subheader("Categorize Transactions")
-    # Add options to automatically categorize transactions for better expense tracking
-
-    # Transaction Filtering and Search Section
-    st.sidebar.title("Transaction Filtering and Search")
-    st.sidebar.subheader("Filter and Search Transactions")
-    # Add options for users to filter and search their transaction history based on various criteria
-
-    # Customizable Alerts Section
-    st.sidebar.title("Customizable Alerts")
-    st.sidebar.subheader("Set Up Custom Alerts")
-    # Allow users to customize fraud detection alerts based on their preferences
-
-    # Educational Resources Section
-    st.sidebar.title("Educational Resources")
-    st.sidebar.subheader("Learn How to Protect Yourself from Fraud")
-    # Provide links to educational resources or tips on fraud prevention
-
-    # Exportable Reports Section
-    st.sidebar.title("Exportable Reports")
-    st.sidebar.subheader("Export Reports for Analysis")
-    # Allow users to export transaction data and fraud detection reports for further analysis
-
-    # Feedback Mechanism Section
-    st.sidebar.title("Feedback Mechanism")
-    st.sidebar.subheader("Provide Feedback")
-    # Include a feedback mechanism to gather user input and improve the app
-
-    # Integration with External APIs Section
-    st.sidebar.title("Integration with External APIs")
-    st.sidebar.subheader("Integrate External Services")
-    # Add options to integrate with external APIs for additional features like credit score monitoring
-
-   # Footer with statement by "sserunjogi aaron"
-    st.markdown(
-        """
-        <div style="background-color:#f4f4f4;padding:10px;border-radius:10px">
-        <p style="text-align:center;color:#333333;">"We must all work together to prevent fraud and protect our financial assets." - sserunjogi aaron</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+        # Precision-Recall Curve
+        st.subheader("Precision-Recall Curve")
+        plot_precision_recall([lr_model, rf_model, dt_model, xgb_model], models, x_test, y_test)
 
 if __name__ == "__main__":
     main()
