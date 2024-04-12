@@ -36,7 +36,6 @@ def train_xgboost_model(transaction_data):
     print(confusion_matrix(y_test, predictions))
     return model
 
-
 def predict_fraud(model, transaction_data):
     # Perform preprocessing
     preprocessed_data = preprocess_data(transaction_data)
@@ -59,6 +58,9 @@ def main():
 
     # File upload widget for single CSV transaction
     uploaded_file = st.file_uploader("Upload single transaction data (CSV file)", type="csv")
+
+    # Initialize model variable
+    model = None
 
     if uploaded_file is not None:
         # Read the uploaded file
