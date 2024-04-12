@@ -99,6 +99,7 @@ def main():
           
 
             # Perform prediction for each uploaded file
+            model = train_xgboost_model(transaction_data)
             prediction = predict_fraud(transaction_data, model)
 
             # Display the result for each uploaded file
