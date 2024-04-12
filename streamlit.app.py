@@ -21,8 +21,8 @@ def preprocess_data(df):
 
 # Load dataset
 @st.cache
-def load_data(filename):
-    df = pd.read_csv(filename)
+def load_data(uploaded_file):
+    df = pd.read_csv(uploaded_file)
     df = preprocess_data(df)
     return df
 
@@ -58,15 +58,14 @@ def train_and_evaluate_model(df):
     
     return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
+# Visualizations
 def plot_distribution(df):
-    fig, axes = plt.subplots(nrows=1, ncols=len(df.columns[1:-1]), figsize=(20, 5))
+    fig, axes = plt.subplots(nrows=7, ncols=4, figsize=(20, 25))
+    axes = axes.flatten()
     for i, col in enumerate(df.columns[1:-1]):
         sns.distplot(df[col], ax=axes[i])
     plt.tight_layout()
     st.pyplot()
-
-# Call the function
-plot_distribution(df)
 
 def plot_class_distribution(df):
     fig = px.histogram(df, x='Class', title='Class Distribution', color='Class')
