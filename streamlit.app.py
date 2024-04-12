@@ -54,7 +54,7 @@ def main():
         else:
             st.sidebar.error("Invalid Username or Password")
 
-    def main():
+def main():
     st.title("Fraud Detection App")
     st.write("Welcome to the Fraud Detection App!")
 
