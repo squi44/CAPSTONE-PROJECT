@@ -1,16 +1,23 @@
 import streamlit as st
+import subprocess
 import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import classification_report, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the pre-trained XGBoost model
-model = xgb.XGBClassifier()
-model.load_model("xgb_model.json")
+# Install required packages
+def install_packages():
+    subprocess.call("pip install -r requirements.txt", shell=True)
 
-def predict_fraud(transaction_data):
-    # Perform any necessary preprocessing on the transaction data (e.g., scaling)
+# Function to load the pre-trained XGBoost model
+def load_model():
+    model = xgb.XGBClassifier()
+    model.load_model("xgb_model.json")
+    return model
+
+# Function to predict fraud
+def predict_fraud(model, transaction_data):
     # Make predictions using the pre-trained model
     predictions = model.predict(transaction_data)
     return predictions
@@ -23,6 +30,12 @@ def main():
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
     if uploaded_file is not None:
+        # Install required packages
+        install_packages()
+
+        # Load pre-trained model
+        model = load_model()
+
         # Read the uploaded file
         transaction_data = pd.read_csv(uploaded_file)
 
@@ -35,7 +48,7 @@ def main():
             st.write("Performing fraud detection...")
 
             # Perform prediction
-            predictions = predict_fraud(transaction_data.drop(columns=['Class'], axis=1))
+            predictions = predict_fraud(model, transaction_data.drop(columns=['Class'], axis=1))
 
             # Display the results
             st.subheader("Prediction Results:")
