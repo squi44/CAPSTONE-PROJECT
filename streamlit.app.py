@@ -60,12 +60,15 @@ def train_and_evaluate_model(df):
 
 # Visualizations
 def plot_distribution(df):
-    fig, axes = plt.subplots(nrows=7, ncols=4, figsize=(20, 25))
+    num_columns = len(df.columns[1:-1])
+    num_rows = (num_columns + 3) // 4  # Calculate the number of rows needed
+    fig, axes = plt.subplots(nrows=num_rows, ncols=4, figsize=(20, num_rows * 5))
     axes = axes.flatten()
     for i, col in enumerate(df.columns[1:-1]):
         sns.distplot(df[col], ax=axes[i])
     plt.tight_layout()
     st.pyplot()
+
 
 def plot_class_distribution(df):
     fig = px.histogram(df, x='Class', title='Class Distribution', color='Class')
