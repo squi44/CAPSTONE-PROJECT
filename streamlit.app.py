@@ -63,7 +63,7 @@ def plot_distribution(df):
     fig, axes = plt.subplots(nrows=7, ncols=4, figsize=(20, 25))
     axes = axes.flatten()
     for i, col in enumerate(df.columns[1:-1]):
-        sns.distplot(df[col], ax=axes[i])
+    sns.distplot(df[col], ax=axes[i])
     plt.tight_layout()
     st.pyplot()
 
