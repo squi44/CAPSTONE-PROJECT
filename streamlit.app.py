@@ -7,26 +7,32 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 
-# Load the pre-trained XGBoost model
-model = xgb.XGBClassifier()
-model.load_model("xgb_model.json")
-
-# Sample dataset (replace this with your actual dataset)
-# For demonstration purposes, I'll create a simple DataFrame
-data = {
-    'Time': [0, 1, 2, 3, 4],
-    'Amount': [10.0, 20.0, 30.0, 40.0, 50.0],
-    'Location': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'],
-    'Class': [0, 1, 0, 0, 1]  # Dummy class labels (0: Non-fraud, 1: Fraud)
-}
-transaction_data = pd.DataFrame(data)
-
 def preprocess_data(transaction_data):
     # Perform preprocessing such as scaling
     scaler = StandardScaler()
     scaled_amount = scaler.fit_transform(transaction_data[['Amount']])
     transaction_data['Scaled_Amount'] = scaled_amount
     return transaction_data
+    
+def train_xgboost_model(transaction_data):
+    # Perform preprocessing
+    preprocessed_data = preprocess_data(transaction_data)
+    # Split data into features and target
+    X = preprocessed_data.drop(columns=['Class'], axis=1)
+    y = preprocessed_data['Class']
+    # Split data into training and testing sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Train XGBoost model
+    model = xgb.XGBClassifier()
+    model.fit(X_train, y_train)
+    # Evaluate model
+    predictions = model.predict(X_test)
+    print("Classification Report:")
+    print(classification_report(y_test, predictions))
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, predictions))
+    return model
+
 
 def predict_fraud(transaction_data):
     # Perform preprocessing
@@ -48,13 +54,51 @@ def main():
         else:
             st.sidebar.error("Invalid Username or Password")
 
-    # File upload widget
-    uploaded_file = st.file_uploader("Upload your transaction data (CSV file)", type="csv")
+    def main():
+    st.title("Fraud Detection App")
+    st.write("Welcome to the Fraud Detection App!")
+
+    # File upload widget for single CSV transaction
+    uploaded_file = st.file_uploader("Upload single transaction data (CSV file)", type="csv")
 
     if uploaded_file is not None:
         # Read the uploaded file
         transaction_data = pd.read_csv(uploaded_file)
 
+        # Display a preview of the uploaded data
+        st.subheader("Uploaded Transaction Data:")
+        st.write(transaction_data.head())
+
+        # Button to start prediction for single transaction
+        if st.button("Detect Fraud (Single Transaction)"):
+            st.write("Performing fraud detection for single transaction...")
+
+            # Perform prediction for single transaction
+            prediction = predict_fraud(transaction_data)
+
+            # Display the result for single transaction
+            st.subheader("Prediction Result for Single Transaction:")
+            st.write(prediction)
+
+    # File upload widget for multiple CSV transactions
+    uploaded_files = st.file_uploader("Upload multiple transaction data (CSV files)", type="csv", accept_multiple_files=True)
+
+    if uploaded_files:
+        st.subheader("Uploaded Transaction Data:")
+        for uploaded_file in uploaded_files:
+            # Read the uploaded file
+            transaction_data = pd.read_csv(uploaded_file)
+
+            # Display a preview of the uploaded data
+            st.write(transaction_data.head())
+
+            # Perform prediction for each uploaded file
+            prediction = predict_fraud(transaction_data)
+
+            # Display the result for each uploaded file
+            st.subheader(f"Prediction Result for {uploaded_file.name}:")
+            st.write(prediction)
+            
         # Display a preview of the uploaded data
         st.subheader("Uploaded Transaction Data:")
         st.write(transaction_data.head())
