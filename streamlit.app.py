@@ -43,6 +43,9 @@ def predict_fraud(transaction_data, model):
     # Make predictions using the pre-trained model
     predictions = model.predict(preprocessed_data.drop(columns=['Class'], axis=1))
     return predictions
+     # Create a new column to label the predictions
+    transaction_data['Prediction'] = ['fraud' if pred == 1 else 'legit' for pred in predictions]
+    return transaction_data
 
 def main():
     st.title("Fraud Detection App")
