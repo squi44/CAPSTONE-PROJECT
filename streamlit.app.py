@@ -142,10 +142,15 @@ def main():
     st.sidebar.subheader("Integrate External Services")
     # Add options to integrate with external APIs for additional features like credit score monitoring
 
-    # Footer
-    st.markdown("<hr>", unsafe_allow_html=True)
-    st.markdown("*Developed by [Your Name]*")
-    st.markdown("*\"{}\" - Sserunjogi Aaron*".format(footer_statement))
+   # Footer with statement by "sserunjogi aaron"
+    st.markdown(
+        """
+        <div style="background-color:#f4f4f4;padding:10px;border-radius:10px">
+        <p style="text-align:center;color:#333333;">"We must all work together to prevent fraud and protect our financial assets." - sserunjogi aaron</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 if __name__ == "__main__":
     main()
