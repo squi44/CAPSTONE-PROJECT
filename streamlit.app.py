@@ -1,44 +1,72 @@
 import streamlit as st
-import requests
-from pydantic import BaseModel
+import pandas as pd
+import xgboost as xgb
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Define input data model
-class TransactionData(BaseModel):
-    time: float
-    amount: float
-    v1: float
-    v2: float
-    # Add more feature variables as needed
+# Load the pre-trained XGBoost model
+model = xgb.XGBClassifier()
+model.load_model("xgb_model.json")
 
-# Function to make API request for prediction
-def get_prediction(data: TransactionData):
-    url = "http://localhost:8000/predict"
-    response = requests.post(url, json=data.dict())
-    if response.status_code == 200:
-        prediction = response.json()["result"]
-        return prediction
-    else:
-        return None
+def predict_fraud(transaction_data):
+    # Perform any necessary preprocessing on the transaction data (e.g., scaling)
+    # Make predictions using the pre-trained model
+    predictions = model.predict(transaction_data)
+    return predictions
 
-# Streamlit app
 def main():
-    st.title("Credit Card Fraud Detection")
+    st.title("Fraud Detection App")
+    st.write("Upload your transaction data to detect fraudulent transactions.")
 
-    # Prediction Section
-    st.sidebar.subheader("Make Prediction")
-    time = st.sidebar.number_input("Time", min_value=0.0, step=1.0)
-    amount = st.sidebar.number_input("Amount", min_value=0.0, step=0.01)
-    v1 = st.sidebar.number_input("V1", step=0.01)
-    v2 = st.sidebar.number_input("V2", step=0.01)
-    # Add more input fields as needed
+    # File upload widget
+    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
 
-    if st.sidebar.button("Predict"):
-        transaction_data = TransactionData(time=time, amount=amount, v1=v1, v2=v2)
-        prediction = get_prediction(transaction_data)
-        if prediction is not None:
-            st.success(f"Prediction: {prediction}")
-        else:
-            st.error("Failed to fetch prediction. Please try again later.")
+    if uploaded_file is not None:
+        # Read the uploaded file
+        transaction_data = pd.read_csv(uploaded_file)
+
+        # Display a preview of the uploaded data
+        st.subheader("Uploaded Transaction Data:")
+        st.write(transaction_data.head())
+
+        # Button to start prediction
+        if st.button("Detect Fraud"):
+            st.write("Performing fraud detection...")
+
+            # Perform prediction
+            predictions = predict_fraud(transaction_data.drop(columns=['Class'], axis=1))
+
+            # Display the results
+            st.subheader("Prediction Results:")
+            st.write(predictions)
+
+            # Display detailed metrics
+            st.subheader("Detailed Metrics:")
+            st.write(classification_report(transaction_data['Class'], predictions))
+
+            # Display confusion matrix
+            st.subheader("Confusion Matrix:")
+            cm = confusion_matrix(transaction_data['Class'], predictions)
+            plt.figure(figsize=(8, 6))
+            sns.heatmap(cm, annot=True, cmap='Blues', fmt='g')
+            plt.xlabel('Predicted')
+            plt.ylabel('Actual')
+            st.pyplot()
+
+            # Display visualization of prediction results
+            st.subheader("Visualization of Prediction Results:")
+            fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+            sns.countplot(x='Class', data=transaction_data, ax=axes[0])
+            axes[0].set_title("Actual Distribution")
+            axes[0].set_xlabel("Class")
+            axes[0].set_ylabel("Count")
+
+            sns.countplot(x=predictions, ax=axes[1])
+            axes[1].set_title("Predicted Distribution")
+            axes[1].set_xlabel("Predicted Class")
+            axes[1].set_ylabel("Count")
+            st.pyplot()
 
 if __name__ == "__main__":
     main()
