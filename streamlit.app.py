@@ -20,11 +20,14 @@ def train_xgboost_model(transaction_data):
     # Split data into features and target
     X = preprocessed_data.drop(columns=['Class'], axis=1)
     y = preprocessed_data['Class']
+    
     # Split data into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
     # Train XGBoost model
     model = xgb.XGBClassifier(n_jobs=-1)
     model.fit(X_train, y_train)
+    
     # Evaluate model
     predictions = model.predict(X_test)
     print("Classification Report:")
@@ -71,6 +74,7 @@ def main():
 
         # Button to start prediction for single transaction
         if st.button("Detect Fraud (Single Transaction)"):
+            model = train_xgboost_model(transaction_data)
             st.write("Performing fraud detection for single transaction...")
 
             # Perform prediction for single transaction
@@ -88,9 +92,11 @@ def main():
         for uploaded_file in uploaded_files:
             # Read the uploaded file
             transaction_data = pd.read_csv(uploaded_file)
+            
 
             # Display a preview of the uploaded data
             st.write(transaction_data.head())
+          
 
             # Perform prediction for each uploaded file
             prediction = predict_fraud(transaction_data)
@@ -105,6 +111,7 @@ def main():
 
         # Button to start prediction
         if st.button("Detect Fraud"):
+            model = train_xgboost_model(transaction_data)
             st.write("Performing fraud detection...")
 
             # Perform prediction
