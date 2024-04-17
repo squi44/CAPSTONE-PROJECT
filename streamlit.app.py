@@ -74,20 +74,28 @@ def plot_distribution(df):
     plt.tight_layout()
     st.pyplot()
 
-# Perform Shapiro-Wilk and Kolmogorov-Smirnov tests for normality
-shapiro_results = {}
-ks_results = {}
-for col in df.columns:
-    shapiro_stat, shapiro_p = shapiro(df[col])
-    ks_stat, ks_p = kstest(df[col], 'norm')
-    shapiro_results[col] = {'Statistic': shapiro_stat, 'p-value': shapiro_p}
-    ks_results[col] = {'Statistic': ks_stat, 'p-value': ks_p}
+# Statistical Tests to check for normal distribution 
+for col in df_temp.columns:
+    # Shapiro-Wilk Test
+    stat, p = stats.shapiro(df_temp[col])
+    print(f'Shapiro-Wilk Test for {col}: Statistic={stat}, p-value={p}')
+    
+    # Kolmogorov-Smirnov Test
+    stat, p = stats.kstest(df_temp[col], 'norm')
+    print(f'Kolmogorov-Smirnov Test for {col}: Statistic={stat}, p-value={p}')
+    
+# Q-Q Plot
+for col in df_temp.columns:
+    stats.probplot(df_temp[col], dist="norm", plot=plt)
+    plt.title(f"Q-Q plot for {col}")
+    plt.show()
 
-# Q-Q Plot for visual assessment
-for col in df.columns:
-    sm.qqplot(df[col], line='s')
-    plt.title(f"Q-Q Plot for {col}")
-    st.pyplot()
+# Descriptive Statistics
+for col in df_temp.columns:
+    mean = df_temp[col].mean()b
+    median = df_temp[col].median()
+    std_dev = df_temp[col].std()
+    print(f"Descriptive statistics for {col}: Mean={mean}, Median={median}, Std Dev={std_dev}")
 
 # Descriptive statistics
 desc_stats = df.describe()
