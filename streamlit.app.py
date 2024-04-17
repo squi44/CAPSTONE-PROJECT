@@ -13,38 +13,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 import xgboost as xgb
 
-# Function to preprocess data
-def preprocess_data(df):
-    scaler = StandardScaler()
-    df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
-    return Data_scaled
-    
-# Function to predict fraudulence
-def predict_fraudulence(data):
-    # Preprocess input data
-    processed_data = preprocess_input(data)
-    # Predict fraudulence
-    prediction = model.predict(processed_data)
-    return prediction
-
-# Input form for transaction details
-st.write("### Enter Transaction Details:")
-time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
-amount = st.number_input("Transaction Amount", value=0.0)
-
-# Predict fraudulence on button click
-if st.button("Predict"):
-    # Create dataframe with input data
-    input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
-    # Predict fraudulence
-    prediction = predict_fraudulence(input_data)
-    # Display prediction result
-    if prediction[0] == 1:
-        st.error("The transaction is **fraudulent**.")
-    else:
-        st.success("The transaction is **legitimate**.")
-
-
 # Load dataset
 @st.cache
 def load_data(uploaded_file):
@@ -57,6 +25,17 @@ def train_and_evaluate_model(df):
     X = df.drop(columns=['Class'], axis=1)
     y = df['Class']
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
+
+    # Function to preprocess data
+def preprocess_data(df):
+    scaler = StandardScaler()
+    # Fitting the scaler on the training data and transforming both training and testing data
+    x_train = scaler.fit_transform(x_train)
+    x_test = scaler.transform(x_test)
+
+    df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
+    return Data_scaled
+    
     
     # Logistic Regression
     lr_model = LogisticRegression()
@@ -184,6 +163,34 @@ def main():
         st.success("Data successfully loaded and preprocessed.")
         st.subheader("Data Summary")
         st.write(df.head())
+
+        
+    # Function to predict fraudulence
+    def predict_fraudulence(data):
+        # Preprocess input data
+        processed_data = preprocess_input(data)
+        # Predict fraudulence
+        prediction = model.predict(processed_data)
+        return prediction
+    
+    # Input form for transaction details
+    st.write("### Enter Transaction Details:")
+    time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
+    amount = st.number_input("Transaction Amount", value=0.0)
+    
+    # Predict fraudulence on button click
+    if st.button("Predict"):
+        # Create dataframe with input data
+        input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
+        # Predict fraudulence
+        prediction = predict_fraudulence(input_data)
+        # Display prediction result
+        if prediction[0] == 1:
+            st.error("The transaction is **fraudulent**.")
+        else:
+            st.success("The transaction is **legitimate**.")
+
+
 
         # Visualization
         st.subheader("Data Distribution")
