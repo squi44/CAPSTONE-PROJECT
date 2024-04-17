@@ -204,37 +204,37 @@ def plot_precision_recall(models, names, x_test, y_test):
     fig.update_layout(xaxis_title='Recall', yaxis_title='Precision', title='Precision-Recall Curve')
     st.plotly_chart(fig)
 
-        # Visualization
-        st.subheader("Data Distribution")
-        plot_distribution(df)
-        st.subheader("Class Distribution")
-        plot_class_distribution(df)
+# Visualization
+st.subheader("Data Distribution")
+plot_distribution(df)
+st.subheader("Class Distribution")
+plot_class_distribution(df)
 
-        # Train and evaluate models
-        st.subheader("Model Training and Evaluation")
-        lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test = train_and_evaluate_model(df)
-        st.write("Logistic Regression F1 Score:", lr_f1)
-        st.write("Random Forest F1 Score:", rf_f1)
-        st.write("Decision Tree F1 Score:", dt_f1)
-        st.write("XGBoost F1 Score:", xgb_f1)
+# Train and evaluate models
+st.subheader("Model Training and Evaluation")
+lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test = train_and_evaluate_model(df)
+st.write("Logistic Regression F1 Score:", lr_f1)
+st.write("Random Forest F1 Score:", rf_f1)
+st.write("Decision Tree F1 Score:", dt_f1)
+st.write("XGBoost F1 Score:", xgb_f1)
 
-        
 
-        # Model comparison
-        st.subheader("Model Comparison")
-        models = ['Logistic Regression', 'Random Forest', 'Decision Tree', 'XGBoost']
-        f1_scores = [lr_f1, rf_f1, dt_f1, xgb_f1]
-        fig = go.Figure(data=[go.Bar(x=models, y=f1_scores)])
-        fig.update_layout(title='Model Comparison', xaxis_title='Model', yaxis_title='F1 Score')
-        st.plotly_chart(fig)
 
-        # Feature Importance
-        st.subheader("Feature Importance")
-        plot_feature_importance(rf_model, df)
+# Model comparison
+st.subheader("Model Comparison")
+models = ['Logistic Regression', 'Random Forest', 'Decision Tree', 'XGBoost']
+f1_scores = [lr_f1, rf_f1, dt_f1, xgb_f1]
+fig = go.Figure(data=[go.Bar(x=models, y=f1_scores)])
+fig.update_layout(title='Model Comparison', xaxis_title='Model', yaxis_title='F1 Score')
+st.plotly_chart(fig)
 
-        # Precision-Recall Curve
-        st.subheader("Precision-Recall Curve")
-        plot_precision_recall([lr_model, rf_model, dt_model, xgb_model], models, x_test, y_test)
+# Feature Importance
+st.subheader("Feature Importance")
+plot_feature_importance(rf_model, df)
+
+# Precision-Recall Curve
+st.subheader("Precision-Recall Curve")
+plot_precision_recall([lr_model, rf_model, dt_model, xgb_model], models, x_test, y_test)
 
 if __name__ == "__main__":
     main()
