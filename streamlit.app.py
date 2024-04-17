@@ -17,7 +17,33 @@ import xgboost as xgb
 def preprocess_data(df):
     scaler = StandardScaler()
     df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
-    return df
+    return Data_scaled
+    
+# Function to predict fraudulence
+def predict_fraudulence(data):
+    # Preprocess input data
+    processed_data = preprocess_input(data)
+    # Predict fraudulence
+    prediction = model.predict(processed_data)
+    return prediction
+
+# Input form for transaction details
+st.write("### Enter Transaction Details:")
+time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
+amount = st.number_input("Transaction Amount", value=0.0)
+
+# Predict fraudulence on button click
+if st.button("Predict"):
+    # Create dataframe with input data
+    input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
+    # Predict fraudulence
+    prediction = predict_fraudulence(input_data)
+    # Display prediction result
+    if prediction[0] == 1:
+        st.error("The transaction is **fraudulent**.")
+    else:
+        st.success("The transaction is **legitimate**.")
+
 
 # Load dataset
 @st.cache
@@ -172,6 +198,8 @@ def main():
         st.write("Random Forest F1 Score:", rf_f1)
         st.write("Decision Tree F1 Score:", dt_f1)
         st.write("XGBoost F1 Score:", xgb_f1)
+
+        
 
         # Model comparison
         st.subheader("Model Comparison")
