@@ -148,6 +148,12 @@ def load_data(uploaded_file):
         print(f"Descriptive statistics for {col}: Mean={mean}, Median={median}, Std Dev={std_dev}")
 
 # Descriptive statistics
+# Load dataset
+@st.cache
+def load_data(uploaded_file):
+    df = pd.read_csv(uploaded_file)
+    df = preprocess_data(df)
+    return df
 desc_stats = df.describe()
 
 # Streamlit app
