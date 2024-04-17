@@ -13,45 +13,12 @@ import plotly.graph_objects as go
 import plotly.express as px
 import xgboost as xgb
 
-# Main function
-def main():
-    st.title("Fraud Detection Dashboard")
 
-    # Load data
-    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-    if uploaded_file is not None:
-        df = load_data(uploaded_file)
-        st.success("Data successfully loaded and preprocessed.")
-        st.subheader("Data Summary")
-        st.write(df.head())
-
-        
-    # Function to predict fraudulence
-    def predict_fraudulence(data):
-        # Preprocess input data
-        processed_data = preprocess_input(data)
-        # Predict fraudulence
-        prediction = model.predict(processed_data)
-        return prediction
-    
-    # Input form for transaction details
-    st.write("### Enter Transaction Details:")
-    time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
-    amount = st.number_input("Transaction Amount", value=0.0)
-    
-    # Predict fraudulence on button click
-    if st.button("Predict"):
-        # Create dataframe with input data
-        input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
-        # Predict fraudulence
-        prediction = predict_fraudulence(input_data)
-        # Display prediction result
-        if prediction[0] == 1:
-            st.error("The transaction is **fraudulent**.")
-        else:
-            st.success("The transaction is **legitimate**.")
-
-
+# Function to preprocess data
+def preprocess_data(df):
+    scaler = StandardScaler()
+    df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
+    return df
 
 # Load dataset
 @st.cache
@@ -60,22 +27,11 @@ def load_data(uploaded_file):
     df = preprocess_data(df)
     return df
 
-    # Model training and evaluation
-    def train_and_evaluate_model(df):
-        X = df.drop(columns=['Class'], axis=1)
-        y = df['Class']
-        x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-    
-        # Function to preprocess data
-    def preprocess_data(df):
-        scaler = StandardScaler()
-        # Fitting the scaler on the training data and transforming both training and testing data
-        x_train = scaler.fit_transform(x_train)
-        x_test = scaler.transform(x_test)
-    
-        df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
-        return df
-        
+# Model training and evaluation
+def train_and_evaluate_model(df):
+    X = df.drop(columns=['Class'], axis=1)
+    y = df['Class']
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
     
     # Logistic Regression
     lr_model = LogisticRegression()
@@ -104,57 +60,33 @@ def load_data(uploaded_file):
     return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
 # Visualizations
-# Load dataset
-@st.cache
-def load_data(uploaded_file):
-    df = pd.read_csv(uploaded_file)
-    df = preprocess_data(df)
-    return df
-    df = pd.read_csv(uploaded_file)
-    df_temp = df.drop(columns=['Time', 'Amount', 'Class'], axis=1)
-    
-    # creating dist plots for each column
-    fig, ax = plt.subplots(ncols=4, nrows=7, figsize=(20, 50))
-    index = 0
-    ax = ax.flatten()
-    
-    for col in df_temp.columns:
-        sns.distplot(df_temp[col], ax=ax[index])
-        index += 1
-    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=5)
-    
-    
-    # Statistical Tests to check for normal distribution 
-    for col in df_temp.columns:
-        # Shapiro-Wilk Test
-        stat, p = stats.shapiro(df_temp[col])
-        print(f'Shapiro-Wilk Test for {col}: Statistic={stat}, p-value={p}')
-        
-        # Kolmogorov-Smirnov Test
-        stat, p = stats.kstest(df_temp[col], 'norm')
-        print(f'Kolmogorov-Smirnov Test for {col}: Statistic={stat}, p-value={p}')
-        
-    # Q-Q Plot
-    for col in df_temp.columns:
-        stats.probplot(df_temp[col], dist="norm", plot=plt)
-        plt.title(f"Q-Q plot for {col}")
-        plt.show()
-    
-    # Descriptive Statistics
-    for col in df_temp.columns:
-        mean = df_temp[col].mean()
-        median = df_temp[col].median()
-        std_dev = df_temp[col].std()
-        print(f"Descriptive statistics for {col}: Mean={mean}, Median={median}, Std Dev={std_dev}")
+def plot_distribution(df):
+    num_columns = len(df.columns[1:-1])
+    num_rows = (num_columns + 3) // 4  # Calculate the number of rows needed
+    fig, axes = plt.subplots(nrows=num_rows, ncols=4, figsize=(20, num_rows * 5))
+    axes = axes.flatten()
+    for i, col in enumerate(df.columns[1:-1]):
+        sns.distplot(df[col], ax=axes[i])
+    plt.tight_layout()
+    st.pyplot()
+
+# Perform Shapiro-Wilk and Kolmogorov-Smirnov tests for normality
+shapiro_results = {}
+ks_results = {}
+for col in df.columns:
+    shapiro_stat, shapiro_p = shapiro(df[col])
+    ks_stat, ks_p = kstest(df[col], 'norm')
+    shapiro_results[col] = {'Statistic': shapiro_stat, 'p-value': shapiro_p}
+    ks_results[col] = {'Statistic': ks_stat, 'p-value': ks_p}
+
+# Q-Q Plot for visual assessment
+for col in df.columns:
+    sm.qqplot(df[col], line='s')
+    plt.title(f"Q-Q Plot for {col}")
+    st.pyplot()
 
 # Descriptive statistics
-# Load dataset
-@st.cache
-def load_data(uploaded_file):
-    df = pd.read_csv(uploaded_file)
-    df = preprocess_data(df)
-    return df
-    desc_stats = df.describe()
+desc_stats = df.describe()
 
 # Streamlit app
 st.title("Credit Card Fraud Detection Analysis")
@@ -216,37 +148,50 @@ def plot_precision_recall(models, names, x_test, y_test):
     fig.update_layout(xaxis_title='Recall', yaxis_title='Precision', title='Precision-Recall Curve')
     st.plotly_chart(fig)
 
-# Visualization
-st.subheader("Data Distribution")
-plot_distribution(df)
-st.subheader("Class Distribution")
-plot_class_distribution(df)
+# Main function
+def main():
+    st.title("Fraud Detection Dashboard")
 
-# Train and evaluate models
-st.subheader("Model Training and Evaluation")
-lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test = train_and_evaluate_model(df)
-st.write("Logistic Regression F1 Score:", lr_f1)
-st.write("Random Forest F1 Score:", rf_f1)
-st.write("Decision Tree F1 Score:", dt_f1)
-st.write("XGBoost F1 Score:", xgb_f1)
+    # Load data
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+        st.success("Data successfully loaded and preprocessed.")
+        st.subheader("Data Summary")
+        st.write(df.head())
 
+        # Visualization
+        st.subheader("Data Distribution")
+        plot_distribution(df)
+        st.subheader("Class Distribution")
+        plot_class_distribution(df)
 
+        # Train and evaluate models
+        st.subheader("Model Training and Evaluation")
+        lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test = train_and_evaluate_model(df)
+        st.write("Logistic Regression F1 Score:", lr_f1)
+        st.write("Random Forest F1 Score:", rf_f1)
+        st.write("Decision Tree F1 Score:", dt_f1)
+        st.write("XGBoost F1 Score:", xgb_f1)
 
-# Model comparison
-st.subheader("Model Comparison")
-models = ['Logistic Regression', 'Random Forest', 'Decision Tree', 'XGBoost']
-f1_scores = [lr_f1, rf_f1, dt_f1, xgb_f1]
-fig = go.Figure(data=[go.Bar(x=models, y=f1_scores)])
-fig.update_layout(title='Model Comparison', xaxis_title='Model', yaxis_title='F1 Score')
-st.plotly_chart(fig)
+        
 
-# Feature Importance
-st.subheader("Feature Importance")
-plot_feature_importance(rf_model, df)
+        # Model comparison
+        st.subheader("Model Comparison")
+        models = ['Logistic Regression', 'Random Forest', 'Decision Tree', 'XGBoost']
+        f1_scores = [lr_f1, rf_f1, dt_f1, xgb_f1]
+        fig = go.Figure(data=[go.Bar(x=models, y=f1_scores)])
+        fig.update_layout(title='Model Comparison', xaxis_title='Model', yaxis_title='F1 Score')
+        st.plotly_chart(fig)
 
-# Precision-Recall Curve
-st.subheader("Precision-Recall Curve")
-plot_precision_recall([lr_model, rf_model, dt_model, xgb_model], models, x_test, y_test)
+        # Feature Importance
+        st.subheader("Feature Importance")
+        plot_feature_importance(rf_model, df)
+
+        # Precision-Recall Curve
+        st.subheader("Precision-Recall Curve")
+        plot_precision_recall([lr_model, rf_model, dt_model, xgb_model], models, x_test, y_test)
 
 if __name__ == "__main__":
     main()
+
