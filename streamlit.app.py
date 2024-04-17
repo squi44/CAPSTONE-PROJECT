@@ -121,6 +121,27 @@ def main():
         st.write("XGBoost F1 Score:", xgb_f1)
 
         
+        # Add Fraud Prediction Section
+        st.subheader("Fraud Prediction")
+        transaction_features = {}  # Dictionary to store input transaction features
+        for col in df.columns[:-1]:
+            transaction_features[col] = st.number_input(f"Enter {col}", value=0.0)
+
+        if st.button("Predict Fraud"):
+            # Create a DataFrame with the transaction features
+            transaction_df = pd.DataFrame([transaction_features])
+
+            # Preprocess the transaction data (using the same preprocessing function)
+            transaction_df = preprocess_data(transaction_df)
+
+            # Use your trained model to predict fraud
+            prediction = xgb_model.predict(transaction_df)  
+
+            # Display the prediction
+            st.write("Prediction:", "Fraudulent" if prediction[0] == 1 else "Not Fraudulent")
+
+
+        
 
         # Model comparison
         st.subheader("Model Comparison")
