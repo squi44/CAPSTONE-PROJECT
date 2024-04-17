@@ -69,6 +69,60 @@ def plot_distribution(df):
     plt.tight_layout()
     st.pyplot()
 
+# Perform Shapiro-Wilk and Kolmogorov-Smirnov tests for normality
+shapiro_results = {}
+ks_results = {}
+for col in df.columns:
+    shapiro_stat, shapiro_p = shapiro(df[col])
+    ks_stat, ks_p = kstest(df[col], 'norm')
+    shapiro_results[col] = {'Statistic': shapiro_stat, 'p-value': shapiro_p}
+    ks_results[col] = {'Statistic': ks_stat, 'p-value': ks_p}
+
+# Q-Q Plot for visual assessment
+for col in df.columns:
+    sm.qqplot(df[col], line='s')
+    plt.title(f"Q-Q Plot for {col}")
+    st.pyplot()
+
+# Descriptive statistics
+desc_stats = df.describe()
+
+# Streamlit app
+st.title("Credit Card Fraud Detection Analysis")
+st.write("### Shapiro-Wilk Test Results:")
+st.write(pd.DataFrame.from_dict(shapiro_results, orient='index'))
+
+st.write("### Kolmogorov-Smirnov Test Results:")
+st.write(pd.DataFrame.from_dict(ks_results, orient='index'))
+
+st.write("### Descriptive Statistics:")
+st.write(desc_stats)
+
+# Interpretation of results
+st.write("## Interpretation")
+st.write("### Implications of Shapiro-Wilk Test Results:")
+st.write("The Shapiro-Wilk test assesses whether the distribution of each feature in the dataset follows a normal distribution. \
+If the p-value of the test is less than a significance level (e.g., 0.05), we reject the null hypothesis that the data is normally distributed. \
+In this case, the p-values are likely to be very low, indicating significant deviations from normality. This impacts subsequent analyses \
+because many statistical methods assume normality, so alternative techniques or transformations may be necessary.")
+
+st.write("### Implications of Kolmogorov-Smirnov Test Results:")
+st.write("The Kolmogorov-Smirnov test also assesses normality, but it focuses on the distribution as a whole rather than specific parameters. \
+Similar to the Shapiro-Wilk test, low p-values indicate significant deviations from normality, which can impact subsequent analyses.")
+
+st.write("### Interpretation of Q-Q Plots:")
+st.write("Q-Q plots visually compare the distribution of each feature in the dataset to a theoretical normal distribution. \
+Significant deviations from normality are indicated by deviations from the diagonal reference line. Outliers or non-normal patterns \
+in the data can be observed from these plots. If the majority of the points deviate significantly from the diagonal line, it suggests \
+that the data does not follow a normal distribution.")
+
+st.write("### Examination of Descriptive Statistics:")
+st.write("Descriptive statistics provide summary information about the distribution of each feature. Mean, median, and standard deviation \
+are indicators of central tendency and spread of the data. Skewed distributions or presence of outliers can be inferred from these statistics. \
+If the mean and median are significantly different, it suggests skewness in the distribution. Outliers can be identified from observations \
+that lie far from the mean. These statistics help in understanding the underlying distribution of the data and identifying potential \
+issues such as class imbalance or data preprocessing requirements.")
+
 
 def plot_class_distribution(df):
     fig = px.histogram(df, x='Class', title='Class Distribution', color='Class')
