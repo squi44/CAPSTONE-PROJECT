@@ -64,6 +64,7 @@ def preprocess_data(df):
     return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
 # Visualizations
+ df = pd.read_csv(uploaded_file)
 df_temp = df.drop(columns=['Time', 'Amount', 'Class'], axis=1)
 
 # creating dist plots for each column
