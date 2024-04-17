@@ -92,7 +92,7 @@ for col in df_temp.columns:
 
 # Descriptive Statistics
 for col in df_temp.columns:
-    mean = df_temp[col].mean()b
+    mean = df_temp[col].mean()
     median = df_temp[col].median()
     std_dev = df_temp[col].std()
     print(f"Descriptive statistics for {col}: Mean={mean}, Median={median}, Std Dev={std_dev}")
