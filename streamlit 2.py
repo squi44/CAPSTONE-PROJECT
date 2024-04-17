@@ -19,27 +19,42 @@ import statsmodels.api as sm
 def preprocess_data(df):
     scaler = StandardScaler()
     df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
+    return Data_scaled
+    
+# Function to predict fraudulence
+def predict_fraudulence(data):
+    # Preprocess input data
+    processed_data = preprocess_input(data)
+    # Predict fraudulence
+    prediction = model.predict(processed_data)
+    return prediction
+
+# Input form for transaction details
+st.write("### Enter Transaction Details:")
+time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
+amount = st.number_input("Transaction Amount", value=0.0)
+
+# Predict fraudulence on button click
+if st.button("Predict"):
+    # Create dataframe with input data
+    input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
+    # Predict fraudulence
+    prediction = predict_fraudulence(input_data)
+    # Display prediction result
+    if prediction[0] == 1:
+        st.error("The transaction is **fraudulent**.")
+    else:
+        st.success("The transaction is **legitimate**.")
+
+
+# Load dataset
+@st.cache
+def load_data(uploaded_file):
+    df = pd.read_csv(uploaded_file)
+    df = preprocess_data(df)
     return df
 
-# Function to perform statistical tests
-def perform_statistical_tests(df):
-    shapiro_results = {}
-    ks_results = {}
-    for col in df.columns:
-        shapiro_stat, shapiro_p = shapiro(df[col])
-        ks_stat, ks_p = kstest(df[col], 'norm')
-        shapiro_results[col] = {'Statistic': shapiro_stat, 'p-value': shapiro_p}
-        ks_results[col] = {'Statistic': ks_stat, 'p-value': ks_p}
-    return shapiro_results, ks_results
-
-# Function to plot Q-Q plots
-def plot_qq_plots(df):
-    for col in df.columns:
-        sm.qqplot(df[col], line='s')
-        plt.title(f"Q-Q Plot for {col}")
-        st.pyplot()
-
-# Function to train and evaluate models
+# Model training and evaluation
 def train_and_evaluate_model(df):
     X = df.drop(columns=['Class'], axis=1)
     y = df['Class']
@@ -48,26 +63,30 @@ def train_and_evaluate_model(df):
     # Logistic Regression
     lr_model = LogisticRegression()
     lr_model.fit(x_train, y_train)
-    lr_f1 = f1_score(y_test, lr_model.predict(x_test))
+    lr_y_pred = lr_model.predict(x_test)
+    lr_f1 = f1_score(y_test, lr_y_pred)
     
     # Random Forest
     rf_model = RandomForestClassifier()
     rf_model.fit(x_train, y_train)
-    rf_f1 = f1_score(y_test, rf_model.predict(x_test))
+    rf_y_pred = rf_model.predict(x_test)
+    rf_f1 = f1_score(y_test, rf_y_pred)
     
     # Decision Tree
     dt_model = DecisionTreeClassifier()
     dt_model.fit(x_train, y_train)
-    dt_f1 = f1_score(y_test, dt_model.predict(x_test))
+    dt_y_pred = dt_model.predict(x_test)
+    dt_f1 = f1_score(y_test, dt_y_pred)
     
     # XGBoost
     xgb_model = xgb.XGBClassifier()
     xgb_model.fit(x_train, y_train)
-    xgb_f1 = f1_score(y_test, xgb_model.predict(x_test))
+    xgb_y_pred = xgb_model.predict(x_test)
+    xgb_f1 = f1_score(y_test, xgb_y_pred)
     
     return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
-# Function to plot distribution of features
+# Visualizations
 def plot_distribution(df):
     num_columns = len(df.columns[1:-1])
     num_rows = (num_columns + 3) // 4  # Calculate the number of rows needed
@@ -78,12 +97,65 @@ def plot_distribution(df):
     plt.tight_layout()
     st.pyplot()
 
-# Function to plot class distribution
+# Perform Shapiro-Wilk and Kolmogorov-Smirnov tests for normality
+shapiro_results = {}
+ks_results = {}
+for col in df.columns:
+    shapiro_stat, shapiro_p = shapiro(df[col])
+    ks_stat, ks_p = kstest(df[col], 'norm')
+    shapiro_results[col] = {'Statistic': shapiro_stat, 'p-value': shapiro_p}
+    ks_results[col] = {'Statistic': ks_stat, 'p-value': ks_p}
+
+# Q-Q Plot for visual assessment
+for col in df.columns:
+    sm.qqplot(df[col], line='s')
+    plt.title(f"Q-Q Plot for {col}")
+    st.pyplot()
+
+# Descriptive statistics
+desc_stats = df.describe()
+
+# Streamlit app
+st.title("Credit Card Fraud Detection Analysis")
+st.write("### Shapiro-Wilk Test Results:")
+st.write(pd.DataFrame.from_dict(shapiro_results, orient='index'))
+
+st.write("### Kolmogorov-Smirnov Test Results:")
+st.write(pd.DataFrame.from_dict(ks_results, orient='index'))
+
+st.write("### Descriptive Statistics:")
+st.write(desc_stats)
+
+# Interpretation of results
+st.write("## Interpretation")
+st.write("### Implications of Shapiro-Wilk Test Results:")
+st.write("The Shapiro-Wilk test assesses whether the distribution of each feature in the dataset follows a normal distribution. \
+If the p-value of the test is less than a significance level (e.g., 0.05), we reject the null hypothesis that the data is normally distributed. \
+In this case, the p-values are likely to be very low, indicating significant deviations from normality. This impacts subsequent analyses \
+because many statistical methods assume normality, so alternative techniques or transformations may be necessary.")
+
+st.write("### Implications of Kolmogorov-Smirnov Test Results:")
+st.write("The Kolmogorov-Smirnov test also assesses normality, but it focuses on the distribution as a whole rather than specific parameters. \
+Similar to the Shapiro-Wilk test, low p-values indicate significant deviations from normality, which can impact subsequent analyses.")
+
+st.write("### Interpretation of Q-Q Plots:")
+st.write("Q-Q plots visually compare the distribution of each feature in the dataset to a theoretical normal distribution. \
+Significant deviations from normality are indicated by deviations from the diagonal reference line. Outliers or non-normal patterns \
+in the data can be observed from these plots. If the majority of the points deviate significantly from the diagonal line, it suggests \
+that the data does not follow a normal distribution.")
+
+st.write("### Examination of Descriptive Statistics:")
+st.write("Descriptive statistics provide summary information about the distribution of each feature. Mean, median, and standard deviation \
+are indicators of central tendency and spread of the data. Skewed distributions or presence of outliers can be inferred from these statistics. \
+If the mean and median are significantly different, it suggests skewness in the distribution. Outliers can be identified from observations \
+that lie far from the mean. These statistics help in understanding the underlying distribution of the data and identifying potential \
+issues such as class imbalance or data preprocessing requirements.")
+
+
 def plot_class_distribution(df):
     fig = px.histogram(df, x='Class', title='Class Distribution', color='Class')
     st.plotly_chart(fig)
 
-# Function to plot feature importance
 def plot_feature_importance(model, df):
     if isinstance(model, xgb.XGBClassifier):
         fig = xgb.plot_importance(model)
@@ -95,7 +167,6 @@ def plot_feature_importance(model, df):
         fig.update_layout(title='Random Forest Feature Importance', xaxis_title='Features', yaxis_title='Importance')
         st.plotly_chart(fig)
 
-# Function to plot precision-recall curve
 def plot_precision_recall(models, names, x_test, y_test):
     fig = go.Figure()
     for model, name in zip(models, names):
@@ -111,24 +182,10 @@ def main():
     # Load data
     uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
     if uploaded_file is not None:
-        df = pd.read_csv(uploaded_file)
-        df = preprocess_data(df)
+        df = load_data(uploaded_file)
         st.success("Data successfully loaded and preprocessed.")
         st.subheader("Data Summary")
         st.write(df.head())
-
-        # Perform statistical tests
-        st.subheader("Statistical Tests")
-        shapiro_results, ks_results = perform_statistical_tests(df)
-        st.write("### Shapiro-Wilk Test Results:")
-        st.write(pd.DataFrame.from_dict(shapiro_results, orient='index'))
-
-        st.write("### Kolmogorov-Smirnov Test Results:")
-        st.write(pd.DataFrame.from_dict(ks_results, orient='index'))
-
-        # Q-Q Plot
-        st.subheader("Q-Q Plots")
-        plot_qq_plots(df)
 
         # Visualization
         st.subheader("Data Distribution")
@@ -143,6 +200,8 @@ def main():
         st.write("Random Forest F1 Score:", rf_f1)
         st.write("Decision Tree F1 Score:", dt_f1)
         st.write("XGBoost F1 Score:", xgb_f1)
+
+        
 
         # Model comparison
         st.subheader("Model Comparison")
