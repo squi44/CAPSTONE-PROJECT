@@ -60,22 +60,22 @@ def load_data(uploaded_file):
     df = preprocess_data(df)
     return df
 
-# Model training and evaluation
-def train_and_evaluate_model(df):
-    X = df.drop(columns=['Class'], axis=1)
-    y = df['Class']
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
-
-    # Function to preprocess data
-def preprocess_data(df):
-    scaler = StandardScaler()
-    # Fitting the scaler on the training data and transforming both training and testing data
-    x_train = scaler.fit_transform(x_train)
-    x_test = scaler.transform(x_test)
-
-    df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
-    return df
+    # Model training and evaluation
+    def train_and_evaluate_model(df):
+        X = df.drop(columns=['Class'], axis=1)
+        y = df['Class']
+        x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42, stratify=y)
     
+        # Function to preprocess data
+    def preprocess_data(df):
+        scaler = StandardScaler()
+        # Fitting the scaler on the training data and transforming both training and testing data
+        x_train = scaler.fit_transform(x_train)
+        x_test = scaler.transform(x_test)
+    
+        df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
+        return df
+        
     
     # Logistic Regression
     lr_model = LogisticRegression()
@@ -104,42 +104,48 @@ def preprocess_data(df):
     return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
 # Visualizations
-df = pd.read_csv(uploaded_file)
-df_temp = df.drop(columns=['Time', 'Amount', 'Class'], axis=1)
-
-# creating dist plots for each column
-fig, ax = plt.subplots(ncols=4, nrows=7, figsize=(20, 50))
-index = 0
-ax = ax.flatten()
-
-for col in df_temp.columns:
-    sns.distplot(df_temp[col], ax=ax[index])
-    index += 1
-plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=5)
-
-
-# Statistical Tests to check for normal distribution 
-for col in df_temp.columns:
-    # Shapiro-Wilk Test
-    stat, p = stats.shapiro(df_temp[col])
-    print(f'Shapiro-Wilk Test for {col}: Statistic={stat}, p-value={p}')
+# Load dataset
+@st.cache
+def load_data(uploaded_file):
+    df = pd.read_csv(uploaded_file)
+    df = preprocess_data(df)
+    return df
+    df = pd.read_csv(uploaded_file)
+    df_temp = df.drop(columns=['Time', 'Amount', 'Class'], axis=1)
     
-    # Kolmogorov-Smirnov Test
-    stat, p = stats.kstest(df_temp[col], 'norm')
-    print(f'Kolmogorov-Smirnov Test for {col}: Statistic={stat}, p-value={p}')
+    # creating dist plots for each column
+    fig, ax = plt.subplots(ncols=4, nrows=7, figsize=(20, 50))
+    index = 0
+    ax = ax.flatten()
     
-# Q-Q Plot
-for col in df_temp.columns:
-    stats.probplot(df_temp[col], dist="norm", plot=plt)
-    plt.title(f"Q-Q plot for {col}")
-    plt.show()
-
-# Descriptive Statistics
-for col in df_temp.columns:
-    mean = df_temp[col].mean()
-    median = df_temp[col].median()
-    std_dev = df_temp[col].std()
-    print(f"Descriptive statistics for {col}: Mean={mean}, Median={median}, Std Dev={std_dev}")
+    for col in df_temp.columns:
+        sns.distplot(df_temp[col], ax=ax[index])
+        index += 1
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=5)
+    
+    
+    # Statistical Tests to check for normal distribution 
+    for col in df_temp.columns:
+        # Shapiro-Wilk Test
+        stat, p = stats.shapiro(df_temp[col])
+        print(f'Shapiro-Wilk Test for {col}: Statistic={stat}, p-value={p}')
+        
+        # Kolmogorov-Smirnov Test
+        stat, p = stats.kstest(df_temp[col], 'norm')
+        print(f'Kolmogorov-Smirnov Test for {col}: Statistic={stat}, p-value={p}')
+        
+    # Q-Q Plot
+    for col in df_temp.columns:
+        stats.probplot(df_temp[col], dist="norm", plot=plt)
+        plt.title(f"Q-Q plot for {col}")
+        plt.show()
+    
+    # Descriptive Statistics
+    for col in df_temp.columns:
+        mean = df_temp[col].mean()
+        median = df_temp[col].median()
+        std_dev = df_temp[col].std()
+        print(f"Descriptive statistics for {col}: Mean={mean}, Median={median}, Std Dev={std_dev}")
 
 # Descriptive statistics
 desc_stats = df.describe()
