@@ -154,7 +154,7 @@ def load_data(uploaded_file):
     df = pd.read_csv(uploaded_file)
     df = preprocess_data(df)
     return df
-desc_stats = df.describe()
+    desc_stats = df.describe()
 
 # Streamlit app
 st.title("Credit Card Fraud Detection Analysis")
