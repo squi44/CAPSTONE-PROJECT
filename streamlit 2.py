@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import classification_report, f1_score, precision_recall_curve
+from sklearn.metrics import f1_score, precision_recall_curve
 import plotly.graph_objects as go
 import plotly.express as px
 import xgboost as xgb
@@ -21,10 +21,6 @@ def preprocess_data(df):
     df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
     return df
 
-# Function to predict fraudulence
-def predict_fraudulence(model, data):
-    return model.predict(data)
-
 # Function to perform statistical tests
 def perform_statistical_tests(df):
     shapiro_results = {}
@@ -34,7 +30,6 @@ def perform_statistical_tests(df):
         ks_stat, ks_p = kstest(df[col], 'norm')
         shapiro_results[col] = {'Statistic': shapiro_stat, 'p-value': shapiro_p}
         ks_results[col] = {'Statistic': ks_stat, 'p-value': ks_p}
-
     return shapiro_results, ks_results
 
 # Function to plot Q-Q plots
