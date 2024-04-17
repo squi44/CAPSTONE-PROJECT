@@ -13,6 +13,46 @@ import plotly.graph_objects as go
 import plotly.express as px
 import xgboost as xgb
 
+# Main function
+def main():
+    st.title("Fraud Detection Dashboard")
+
+    # Load data
+    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
+    if uploaded_file is not None:
+        df = load_data(uploaded_file)
+        st.success("Data successfully loaded and preprocessed.")
+        st.subheader("Data Summary")
+        st.write(df.head())
+
+        
+    # Function to predict fraudulence
+    def predict_fraudulence(data):
+        # Preprocess input data
+        processed_data = preprocess_input(data)
+        # Predict fraudulence
+        prediction = model.predict(processed_data)
+        return prediction
+    
+    # Input form for transaction details
+    st.write("### Enter Transaction Details:")
+    time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
+    amount = st.number_input("Transaction Amount", value=0.0)
+    
+    # Predict fraudulence on button click
+    if st.button("Predict"):
+        # Create dataframe with input data
+        input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
+        # Predict fraudulence
+        prediction = predict_fraudulence(input_data)
+        # Display prediction result
+        if prediction[0] == 1:
+            st.error("The transaction is **fraudulent**.")
+        else:
+            st.success("The transaction is **legitimate**.")
+
+
+
 # Load dataset
 @st.cache
 def load_data(uploaded_file):
@@ -163,46 +203,6 @@ def plot_precision_recall(models, names, x_test, y_test):
         fig.add_trace(go.Scatter(x=recalls, y=precisions, mode='lines', name=name))
     fig.update_layout(xaxis_title='Recall', yaxis_title='Precision', title='Precision-Recall Curve')
     st.plotly_chart(fig)
-
-# Main function
-def main():
-    st.title("Fraud Detection Dashboard")
-
-    # Load data
-    uploaded_file = st.file_uploader("Upload CSV file", type=["csv"])
-    if uploaded_file is not None:
-        df = load_data(uploaded_file)
-        st.success("Data successfully loaded and preprocessed.")
-        st.subheader("Data Summary")
-        st.write(df.head())
-
-        
-    # Function to predict fraudulence
-    def predict_fraudulence(data):
-        # Preprocess input data
-        processed_data = preprocess_input(data)
-        # Predict fraudulence
-        prediction = model.predict(processed_data)
-        return prediction
-    
-    # Input form for transaction details
-    st.write("### Enter Transaction Details:")
-    time = st.number_input("Time Elapsed Since First Transaction (in seconds)", value=0.0)
-    amount = st.number_input("Transaction Amount", value=0.0)
-    
-    # Predict fraudulence on button click
-    if st.button("Predict"):
-        # Create dataframe with input data
-        input_data = pd.DataFrame({'Time': [time], 'Amount': [amount]})
-        # Predict fraudulence
-        prediction = predict_fraudulence(input_data)
-        # Display prediction result
-        if prediction[0] == 1:
-            st.error("The transaction is **fraudulent**.")
-        else:
-            st.success("The transaction is **legitimate**.")
-
-
 
         # Visualization
         st.subheader("Data Distribution")
