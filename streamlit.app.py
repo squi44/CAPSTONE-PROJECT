@@ -64,15 +64,18 @@ def preprocess_data(df):
     return lr_model, rf_model, dt_model, xgb_model, lr_f1, rf_f1, dt_f1, xgb_f1, x_test, y_test
 
 # Visualizations
-def plot_distribution(df):
-    num_columns = len(df.columns[1:-1])
-    num_rows = (num_columns + 3) // 4  # Calculate the number of rows needed
-    fig, axes = plt.subplots(nrows=num_rows, ncols=4, figsize=(20, num_rows * 5))
-    axes = axes.flatten()
-    for i, col in enumerate(df.columns[1:-1]):
-        sns.distplot(df[col], ax=axes[i])
-    plt.tight_layout()
-    st.pyplot()
+df_temp = df.drop(columns=['Time', 'Amount', 'Class'], axis=1)
+
+# creating dist plots for each column
+fig, ax = plt.subplots(ncols=4, nrows=7, figsize=(20, 50))
+index = 0
+ax = ax.flatten()
+
+for col in df_temp.columns:
+    sns.distplot(df_temp[col], ax=ax[index])
+    index += 1
+plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=5)
+
 
 # Statistical Tests to check for normal distribution 
 for col in df_temp.columns:
