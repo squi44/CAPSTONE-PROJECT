@@ -34,7 +34,7 @@ def preprocess_data(df):
     x_test = scaler.transform(x_test)
 
     df.iloc[:, 1:-1] = scaler.fit_transform(df.iloc[:, 1:-1])
-    return Data_scaled
+    return df
     
     
     # Logistic Regression
